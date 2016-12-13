@@ -28,7 +28,7 @@ function __rssh_list () {
       echo "$envname"
       source "$envfile" > /dev/null
       ssh-add -l | sed 's/^/  /'
-      echo "" 
+      echo ""
       )
     fi
   done
@@ -106,8 +106,8 @@ function rssh () {
     cmd="help"
   fi
 
-  case "$1" in 
-    set)
+  case "$1" in
+    env|set)
       shift
       __rssh_set_env "$@"
       ;;
