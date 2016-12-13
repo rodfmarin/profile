@@ -2,6 +2,19 @@
 set -eu
 NAME="$(basename $(pwd))"
 
+# http://serverfault.com/questions/257975/how-to-check-if-im-in-screen-session
+if [ -n "${STY:-}" ]; then
+    echo "Hi, it looks like you're inside a screen session already.  Nesting"
+    echo "screen sessions isn't usually something we want to do, so I'm not"
+    echo "going to.  If you'd really like to, go ahead and run:"
+    echo ""
+    echo "  screen -S \"$NAME\""
+    echo ""
+    echo "Best Regards, your good friend,"
+    echo "  $0"
+    exit 1
+fi
+
 if screen -ls | grep -q "$NAME" ; then
   exec screen -x "$NAME"
 fi
