@@ -111,17 +111,22 @@ function rssh () {
       shift
       __rssh_set_env "$@"
       ;;
+    init)
+      shift
+      __rssh_initialize_env "${2:-$RSSH_ENV}"
+      ;;
     ls)
       shift
       __rssh_list "$@"
       ;;
     *)
-      echo "rssh (set|ls|help)"
+      echo "rssh (set|ls|init|help)"
       echo ""
       echo "Manage multiple ssh-agent environments."
       echo ""
       echo "  set <envname>      Set the current shell environment"
       echo "  ls                 List your ssh enviornments"
+      echo "  init <envname>     Load keys for envname (default=$RSSH_ENV)"
       echo ""
       ;;
   esac
