@@ -14,7 +14,7 @@ fi
 
 
 if [ ! -d $HOME/.bash.d ]; then
-  mkdir -d $HOME/.bash.d
+  mkdir -p $HOME/.bash.d
 fi
 
 for f in $HOME/.profile.d/users/kburton/.bash.d/*; do

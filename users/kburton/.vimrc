@@ -1,5 +1,10 @@
 set nocompatible
-
+set t_Co=256
+set laststatus=2
+"highlight Normal ctermbg=NONE
+"highlight nonText ctermbg=NONE
+let g:airline_powerline_fonts = 1
+let g:airline_theme = "cobalt2"
 
 filetype off
 set rtp+=~/.vim/bundle/Vundle.vim
@@ -8,12 +13,19 @@ Plugin 'VundleVim/Vundle.vim'
 " Plugin 'fatih/vim-go'
 Plugin 'klen/python-mode'
 Plugin 'wting/rust.vim'
+Plugin 'tpope/vim-fugitive'
+Plugin 'vim-airline/vim-airline'
+Plugin 'vim-airline/vim-airline-themes'
+Plugin 'flazz/vim-colorschemes'
+Plugin 'scrooloose/nerdtree'
+Plugin 'Xuyuanp/nerdtree-git-plugin'
 call vundle#end()
 filetype plugin indent on
+"colorscheme molokai 
 
 set backspace=indent,eol,start
 set number " Show line numbers
-
+set background=dark
 syntax on
 
 " Folding *********************************************************************
