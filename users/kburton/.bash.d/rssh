@@ -9,6 +9,11 @@ function __rssh_init () {
   fi
 }
 
+function __rssh_envpath_for_env () {
+  local envname="$1"
+  echo "$__rssh_basedir/$envname"
+}
+
 function __rssh_envfile_for_env () {
   local envname="$1"
   echo "$__rssh_basedir/$envname/agent.env"
@@ -20,17 +25,23 @@ function __rssh_list_envs () {
   done
 }
 
+function __rssh_keyfiles_for_env () {
+  local envname="$1"
+  local envpath="$(__rssh_envpath_for_env "$envname")"
+  for f in $envpath/*.pem $envpath/*.pub; do
+      if [ -e "$f" ]; then
+          echo "$f"
+      fi
+  done
+}
+
 function __rssh_list () {
-  for envname in $(__rssh_list_envs); do
-    local envfile="$(__rssh_envfile_for_env "$envname")"
-    if [ -e "$envfile" ]; then
-      (
-      echo "$envname"
-      source "$envfile" > /dev/null
-      ssh-add -l | sed 's/^/  /'
-      echo ""
-      )
-    fi
+  local envnames="${1:-$(__rssh_list_envs)}"
+
+  for envname in $envnames; do
+    for f in $(__rssh_keyfiles_for_env "$envname"); do
+        echo "$envname: $f"
+    done
   done
 }
 
@@ -41,6 +52,21 @@ function __rssh_agent_is_running () {
   fi
 
   return 0
+}
+
+function __rssh_stop_env () {
+  local envname="$1"
+  local envfile="$(__rssh_envfile_for_env $envname)"
+  source "$envfile"
+  if [ -n "$SSH_AGENT_PID" ]; then
+      echo "Stopping agent: $envname : $SSH_AGENT_PID"
+      kill "$SSH_AGENT_PID"
+  fi
+}
+
+function __rssh_compute_prviate_keyfile () {
+  local keyfile="$1"
+  echo "${keyfile%.pub}"
 }
 
 function __rssh_initialize_env () {
@@ -54,8 +80,10 @@ function __rssh_initialize_env () {
   ssh-agent > "$envfile"
   source "$envfile"
 
-  for key in "$(dirname $envfile)"/*.pub; do
-    local keyfile="$(dirname $key)/$(basename $key .pub)"
+  for key in $(__rssh_keyfiles_for_env "$envname"); do
+    local keyf="$(basename $key)"
+    local keyfile="$(dirname $key)/$(__rssh_compute_prviate_keyfile "$keyf")"
+    # echo "$envname: keyf=$keyf keyfile=$keyfile"
     if [ -e "$keyfile" ]; then
       echo "add key: $keyfile"
       ssh-add "$keyfile"
@@ -115,6 +143,11 @@ function rssh () {
       shift
       __rssh_initialize_env "${2:-$RSSH_ENV}"
       ;;
+    reinit)
+      shift
+      __rssh_stop_env "${2:-$RSSH_ENV}"
+      __rssh_initialize_env "${2:-$RSSH_ENV}"
+      ;;
     ls)
       shift
       __rssh_list "$@"
@@ -127,6 +160,7 @@ function rssh () {
       echo "  set <envname>      Set the current shell environment"
       echo "  ls                 List your ssh enviornments"
       echo "  init <envname>     Load keys for envname (default=$RSSH_ENV)"
+      echo "  reinit <envname>   Kill and re-initialize the agent (default=$RSSH_ENV)"
       echo ""
       ;;
   esac
