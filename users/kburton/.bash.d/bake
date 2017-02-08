@@ -3,3 +3,7 @@
 if [ -e "$HOME/.linuxbrew/bin/bake-completion.sh" ]; then
   source "$HOME/.linuxbrew/bin/bake-completion.sh"
 fi
+
+
+# TODO: handle OS X
+# TODO: handle $HOME/bin
