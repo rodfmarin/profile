@@ -51,6 +51,6 @@ set runtimepath+=$GOROOT/misc/vim
 let g:pymode_rope_lookup_project = 0
 let g:pymode_rope = 0
 
-
+cabbrev E Explore
 
 au BufRead,BufNewFile Jenkinsfile* setfiletype groovy
