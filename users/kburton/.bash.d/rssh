@@ -3,7 +3,7 @@
 __rssh_basedir="$HOME/.ssh/environments"
 
 if [ -e "$__rssh_basedir/default/agent.env" ]; then
-  source "$__rssh_basedir/default/agent.env"
+  source "$__rssh_basedir/default/agent.env" >/dev/null 2>&1
 fi
 
 function __rssh_init () {
