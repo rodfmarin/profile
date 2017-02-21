@@ -1,7 +1,6 @@
 set nocompatible
-
-
 filetype off
+
 set rtp+=~/.vim/bundle/Vundle.vim
 call vundle#begin()
 Plugin 'VundleVim/Vundle.vim'
@@ -54,3 +53,17 @@ let g:pymode_rope = 0
 cabbrev E Explore
 
 au BufRead,BufNewFile Jenkinsfile* setfiletype groovy
+
+" http://stackoverflow.com/questions/356126/how-can-you-automatically-remove-trailing-whitespace-in-vim
+" automatically remove trailing whitespace
+fun! <SID>StripTrailingWhitespaces()
+  let l = line(".")
+  let c = col(".")
+  %s/\s\+$//e
+  call cursor(l, c)
+endfun
+
+" autocmd FileType c,cpp,java,php,ruby,python,rust.rs autocmd BufWritePre <buffer> :call <SID>StripTrailingWhitespaces()
+autocmd BufWritePre <buffer> :call <SID>StripTrailingWhitespaces()
+
+
