@@ -11,6 +11,7 @@ if [ -d "/usr/local/mysql/bin" ]; then
 fi
 
 test -f /etc/bashrc && . /etc/bashrc
+
 . ~/.profile.d/init
 . ~/.profile.d/users/kburton/kyle.burton.conf
 
@@ -21,8 +22,6 @@ if [ -d /usr/local/opt/coreutils/libexec/gnubin ]; then
   PATH="/usr/local/opt/coreutils/libexec/gnubin:$PATH"
 fi
 
-. $HOME/.profile.d/users/kburton/kyle.burton.conf
-
 export RUBYLIB="$RUBYLIB:$HOME/projects/rn-extutils/relay-gems/lib"
 
 PATH=$PATH:$HOME/.rvm/bin # Add RVM to PATH for scripting
@@ -32,25 +31,8 @@ PATH=$PATH:$HOME/.rvm/bin # Add RVM to PATH for scripting
 #   source $HOME/personal/projects/dev-utils/instago/env.go
 # fi
 
-DIOCEAN_COMPLETION="$GOPATH/src/github.com/kyleburton/diocean/scripts/diocean-completion.bash"
-if [ -e $DIOCEAN_COMPLETION ]; then
-  source $DIOCEAN_COMPLETION
-fi
-
-
-export PATH="$PATH:/opt/node/bin"
-
 if [ -d /usr/local/sbin ]; then
   export PATH="$PATH:/usr/local/sbin"
-fi
-
-# if [ -e $HOME/software/env.go ]; then
-#   source $HOME/software/env.go
-# fi
-
-
-if [ -e "$HOME/bin/.bake-completion.sh" ]; then
-  source "$HOME/bin/.bake-completion.sh"
 fi
 
 if which pyenv >/dev/null 2>&1; then
