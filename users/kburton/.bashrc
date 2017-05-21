@@ -22,17 +22,16 @@ if [ -d /usr/local/opt/coreutils/libexec/gnubin ]; then
   PATH="/usr/local/opt/coreutils/libexec/gnubin:$PATH"
 fi
 
-export RUBYLIB="$RUBYLIB:$HOME/projects/rn-extutils/relay-gems/lib"
+. $HOME/.profile.d/users/kburton/kyle.burton.conf
 
-PATH=$PATH:$HOME/.rvm/bin # Add RVM to PATH for scripting
-#rvm use 1.8.7 >/dev/null 2>&1
-
-# if [ -e $HOME/personal/projects/dev-utils/instago/env.go ]; then
-#   source $HOME/personal/projects/dev-utils/instago/env.go
-# fi
+export PATH="$PATH:/opt/node/bin"
 
 if [ -d /usr/local/sbin ]; then
   export PATH="$PATH:/usr/local/sbin"
+fi
+
+if [ -e "$HOME/bin/.bake-completion.sh" ]; then
+  source "$HOME/bin/.bake-completion.sh"
 fi
 
 if which pyenv >/dev/null 2>&1; then
@@ -67,8 +66,13 @@ if [ -d ~/.bash.d ]; then
   done
 fi
 
-if [ -d ~/.cargo/bin ]; then
-  export PATH="$PATH:~/.cargo/bin"
+export GREP_OPTIONS="--color=auto"
+export GREP_COLOR='1;35;40'
+
+
+
+if [ -d $HOME/.cargo/bin ]; then
+  export PATH="$PATH:$HOME/.cargo/bin"
 fi
 
 export PAGER="${PAGER:-less}"

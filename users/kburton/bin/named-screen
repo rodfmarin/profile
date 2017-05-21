@@ -1,22 +1,99 @@
 #!/usr/bin/env bash
-set -eu
-NAME="$(basename $(pwd))"
+set -eu -o pipefail
 
-# http://serverfault.com/questions/257975/how-to-check-if-im-in-screen-session
-if [ -n "${STY:-}" ]; then
-    echo "Hi, it looks like you're inside a screen session already.  Nesting"
-    echo "screen sessions isn't usually something we want to do, so I'm not"
-    echo "going to.  If you'd really like to, go ahead and run:"
-    echo ""
-    echo "  screen -S \"$NAME\""
-    echo ""
-    echo "Best Regards, your good friend,"
-    echo "  $0"
-    exit 1
-fi
+function _compute_screen_name_for_pwd () {
+  if [ -e '.named-screen' ]; then
+      grep '^NAME=' .named-screen | cut -f2 -d=
+      return 0
+  fi
+  basename $(pwd)
+}
 
-if screen -ls | grep -q "$NAME" ; then
-  exec screen -x "$NAME"
-fi
+function _is_active_screen_name () {
+  local name="$1"
+  screen -ls | grep -q "$name"
+}
 
-exec screen -S "$NAME"
+function _create_or_attach () {
+  local name="$(_compute_screen_name_for_pwd)"
+  # http://serverfault.com/questions/257975/how-to-check-if-im-in-screen-session
+  if [ -n "${STY:-}" ]; then
+      echo "Hi, it looks like you're inside a screen session already.  Nesting"
+      echo "screen sessions isn't usually something we want to do, so I'm not"
+      echo "going to.  If you'd really like to, go ahead and run:"
+      echo ""
+      echo "  screen -S \"$name\""
+      echo ""
+      echo "Best Regards, your good friend,"
+      echo "  $0"
+      exit 1
+  fi
+
+  if _is_active_screen_name "$name"; then
+      exec screen -x "$name"
+  fi
+
+  exec screen -S "$name"
+}
+
+function _show_screen_cmd () {
+  local name="$(_compute_screen_name_for_pwd)"
+  if _is_active_screen_name "$name"; then
+      echo screen -x "$name"
+      return
+  fi
+
+  echo screen -S "$name"
+  return
+}
+
+function _isodate () {
+  date -u +"%Y-%m-%dT%H:%M:%SZ"
+}
+
+function _init_cfg_file () {
+  local name="$(_compute_screen_name_for_pwd)"
+  if [ -e '.named-screen' ]; then
+      return 0
+  fi
+
+  cat > .named-screen <<END
+# created by $0 on $(_isodate)
+NAME=$name
+END
+}
+
+function _show_usage () {
+  echo "$0 - Manage your screen sesions sensibly."
+  echo ""
+  echo "   -h --help help    show this help"
+  echo "   show              show screen cli w/name"
+  echo "   init              create a .named-screen cfg file in the PWD"
+  echo ""
+}
+
+function _main () {
+  local cmd="${1:-}"
+
+  case "$cmd" in
+      -h|--help|help)
+          _show_usage
+          ;;
+      init)
+          _init_cfg_file
+          ;;
+      show)
+          _show_screen_cmd
+          ;;
+      "")
+          _create_or_attach
+          ;;
+      *)
+          exec screen "$@"
+          ;;
+  esac
+
+  exit 0
+}
+
+_main "$@"
