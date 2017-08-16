@@ -66,8 +66,10 @@ if [ -d ~/.bash.d ]; then
   done
 fi
 
-export GREP_OPTIONS="--color=auto"
-export GREP_COLOR='1;35;40'
+if [[ "Darwin" = $(uname) ]]; then
+    export GREP_OPTIONS="--color=auto"
+    export GREP_COLOR='1;35;40'
+fi
 
 
 
