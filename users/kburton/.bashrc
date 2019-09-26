@@ -34,12 +34,6 @@ if [ -e "$HOME/bin/.bake-completion.sh" ]; then
   source "$HOME/bin/.bake-completion.sh"
 fi
 
-if which pyenv >/dev/null 2>&1; then
-  eval "$(pyenv init -)"
-  eval "$(pyenv virtualenv-init -)" > /dev/null 2>&1
-  export PYENV_VIRTUALENV_DISABLE_PROMPT=1 > /dev/null 2>&1
-fi
-
 if [ -d "$HOME/.env.local" ]; then
   for f in "$HOME/.env.local/*"; do
     source $f
@@ -83,3 +77,9 @@ if [ -e /usr/local/bin/aws_completer ]; then
   complete -C '/usr/local/bin/aws_completer' aws
 fi
 
+
+# if [[ -e "$HOME/.linuxbrew/Cellar/bake/1.0.12/bin/bake-completion.sh" ]]; then
+#   source "$HOME/.linuxbrew/Cellar/bake/1.0.12/bin/bake-completion.sh"
+# fi
+
+. /home/kyle/code/github.com/kyleburton/bake/bake-completion.sh

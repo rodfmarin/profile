@@ -4,7 +4,6 @@
 
 [core]
         excludesfile = /home/kburton/.gitignore
-        editor = /usr/local/bin/vim
 
 [color]
         ui = auto
@@ -20,10 +19,10 @@
         br = branch
         co = checkout
         df = diff
+        dfw = diff -w
         dfc = diff --cached
+        dfcw = diff --cached -w
         lg = log -p
-        spull = !git-svn fetch && git-svn rebase --local
-        spush = !git-svn dcommit
 	      pob = !"git pull --rebase origin $(git rev-parse --abbrev-ref HEAD)"
         pub = !"git push origin $(git rev-parse --abbrev-ref HEAD)"
         repub = !git pob && git pub
