@@ -7,6 +7,7 @@ Plugin 'VundleVim/Vundle.vim'
 " Plugin 'fatih/vim-go'
 Plugin 'klen/python-mode'
 Plugin 'wting/rust.vim'
+Plugin 'chemzqm/vim-jsx-improve'
 call vundle#end()
 filetype plugin indent on
 
@@ -39,7 +40,7 @@ set ruler " Show ruler
 " Setup backup location and enable
 set backupdir=~/.vim/backup
 set backup
- 
+
 " Set Swap directory
 set directory=~/.vim/backup/swap
 
@@ -49,6 +50,10 @@ set runtimepath+=$GOROOT/misc/vim
 
 let g:pymode_rope_lookup_project = 0
 let g:pymode_rope = 0
+let g:pymode_options_colorcolumn = 0
+" set colorcolumn=""
+let g:pymode_lint_options_pep8 =
+      \ {'max_line_length': 140}
 
 cabbrev E Explore
 

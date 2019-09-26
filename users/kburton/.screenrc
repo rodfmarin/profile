@@ -1,24 +1,40 @@
 escape ^]]
 
-screen -t editor    # 0
-screen -t build     # 1
-screen -t admin     # 2
-screen -t services  # 3
-screen -t top       # 4
-screen -t services2 # 5
-screen -t misc      # 6
-screen -t misc2     # 7
-#screen -t remote    # 8
-#screen -t remote2   # 9
+term screen-256color
+altscreen on
+
+screen -t edit       0 bash
+screen -t build      1 bash
+screen -t admin      2 bash
+screen -t svc        3 bash
+screen -t top        4 bash
+screen -t svc2       5 bash
+screen -t db         6 bash
+screen -t misc       7 bash
+screen -t misc2      8 bash
+screen -t remote     9 bash
+
 select 0
 
-shell -bash
-startup_message off 
+# NB: these are "shift+1" through "shift+0" to get bindings to get to terminals 11 through 19
+# bind  ! select 11
+# bind  @ select 12
+# bind \# select 13
+# bind  $ select 14
+# bind  % select 15
+# bind \^ select 16
+# bind  & select 17
+# bind  * select 18
+# bind  ( select 19
+# bind  ) select 10
+
+
+# shell -bash
+# startup_message off
 hardstatus alwayslastline
 hardstatus string '%{gk}[ %{G}%H %{g}][%= %{wk}%?%-Lw%?%{=b kR} (%{W}%n*%f %t%?(%u)%?%{=b kR})%{= kw}%?%+Lw%?%?%= %{g}][%{Y}%l%{g}] %{=b C}[ %m/%d %c ]%{W}'
 
 attrcolor b ".I"
-termcapinfo xterm 'Co#256:AB=\E[48;5;%dm:AF=\E[38;5;%dm'
+# # NB: this termcapinfo setting seemes to mess up emacs?
+# # termcapinfo xterm 'Co#256:AB=\E[48;5;%dm:AF=\E[38;5;%dm'
 defbce "on"
-# set TERM 
-term screen-256color-bce

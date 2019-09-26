@@ -1,9 +1,0 @@
-# check for bake-completion.sh installed via linuxbrew:
-
-if [ -e "$HOME/.linuxbrew/bin/bake-completion.sh" ]; then
-  source "$HOME/.linuxbrew/bin/bake-completion.sh"
-fi
-
-
-# TODO: handle OS X
-# TODO: handle $HOME/bin
