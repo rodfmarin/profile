@@ -130,6 +130,26 @@ function __rssh_set_env () {
   fi
 }
 
+function _rssh.complete () {
+  local cword cur envs
+  _get_comp_words_by_ref -n : -c cur cword
+
+  commands="env set init reinit ls"
+  if [[ "$cword" -eq "1" ]]; then
+    mapfile -t COMPREPLY < <(compgen -W "$commands" -- "$cur")
+    return
+  fi
+
+  envs="$(for f in $(ls -d $HOME/.ssh/environments/*); do basename "$f"; done)"
+  if [[ "$cword" -eq "2" ]]; then
+    mapfile -t COMPREPLY < <(compgen -W "$envs" -- "$cur")
+    return
+  fi
+
+  mapfile -t COMPREPLY < <(compgen -o default -- "$cur")
+}
+
+
 function rssh () {
   local cmd="$1"
   __rssh_init
@@ -169,3 +189,5 @@ function rssh () {
       ;;
   esac
 }
+
+complete -F _rssh.complete rssh
