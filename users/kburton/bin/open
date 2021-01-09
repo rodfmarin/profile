@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+set -eEuo pipefail
+
+if [[ -n "${DEBUG:-}" ]]; then
+  set -x
+fi
+
+open-image () {
+  exec sxiv "$@"
+}
+
+open-directory () {
+  exec rox "$@"
+}
+
+
+open-fpath () {
+  local target
+  target="$1"
+
+  if [[ -d "$target" ]]; then
+    open-directory "$@"
+  fi
+
+  if [[ -f "$target" ]] && [[ $target == *.gif ]]; then
+    open-image "$@"
+  fi
+
+  if [[ -f "$target" ]] && [[ $target == *.png ]]; then
+    open-image "$@"
+  fi
+
+  if [[ -f "$target" ]] && [[ $target == *.jpg ]]; then
+    open-image "$@"
+  fi
+
+  if [[ -f "$target" ]] && [[ $target == *.jpeg ]]; then
+    open-image "$@"
+  fi
+
+  echo "Error: don't know how to open-fpath: $@"
+}
+
+open-url () {
+  exec google-chrome "$@"
+}
+
+main () {
+  local target
+  target="${1:-.}"
+
+  case "$target" in
+    https://*)
+      open-url "$@"
+      ;;
+
+    http://*)
+      open-url "$@"
+      ;;
+
+    *)
+      open-fpath "$@"
+      ;;
+  esac
+}
+
+main "$@"

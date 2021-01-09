@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+function main () {
+    case "${1:-}" in
+        d|date)
+            date -u +"%Y-%m-%d"
+            ;; 
+        j|journal)
+            date +"%Y-%m-%dT%H:%M:%S"
+            ;; 
+        ## full date+time in Zulu / UTC / ISO format
+        *)
+            date -u +"%Y-%m-%dT%H:%M:%SZ"
+            ;; 
+    esac
+}
+
+
+main "$@"

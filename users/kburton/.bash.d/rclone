@@ -2,6 +2,12 @@
 
 # TODO: command line completion for this tooling
 
+
+function __rclone.open_url () {
+  local url="$1"
+  xdg-open "$url"
+}
+
 # TODO: how would we like branches to work? eg:
 #         rclone https://github.com/pallets/flask/tree/1.1.x
 #       would we like that to checkout the branch if the local repo is clean?

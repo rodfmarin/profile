@@ -23,8 +23,13 @@
         dfc = diff --cached
         dfcw = diff --cached -w
         lg = log -p
+        # "Pull Origin Branch"
 	      pob = !"git pull --rebase origin $(git rev-parse --abbrev-ref HEAD)"
+        # "PUBlish"
         pub = !"git push origin $(git rev-parse --abbrev-ref HEAD)"
+        # "Stash, Pull, Pop"
+        spp = !"git stash save && git pull --rebase origin $(git rev-parse --abbrev-ref HEAD) && git stash pop"
+        # "REbase and PUBlish"
         repub = !git pob && git pub
         lg = log -p
         cfg = config --global
