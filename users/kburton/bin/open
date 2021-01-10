@@ -38,6 +38,10 @@ open-fpath () {
     open-image "$@"
   fi
 
+  if [[ -f "$target" ]] && [[ $target == *.html ]]; then
+    open-url "$@"
+  fi
+
   echo "Error: don't know how to open-fpath: $@"
 }
 

@@ -67,10 +67,6 @@ fi
 
 
 
-if [ -d $HOME/.cargo/bin ]; then
-  export PATH="$PATH:$HOME/.cargo/bin"
-fi
-
 export PAGER="${PAGER:-less}"
 
 if [ -e /usr/local/bin/aws_completer ]; then
@@ -83,3 +79,19 @@ fi
 # fi
 
 . /home/kyle/code/github.com/kyleburton/bake/bake-completion.sh
+
+
+if type brew &>/dev/null; then
+  HOMEBREW_PREFIX="$(brew --prefix)"
+  if [[ -r "${HOMEBREW_PREFIX}/etc/profile.d/bash_completion.sh" ]]; then
+    source "${HOMEBREW_PREFIX}/etc/profile.d/bash_completion.sh"
+  else
+    for COMPLETION in "${HOMEBREW_PREFIX}/etc/bash_completion.d/"*; do
+      [[ -r "$COMPLETION" ]] && source "$COMPLETION"
+    done
+  fi
+fi
+
+export EDITOR=vim
+
+test -f "$HOME/.asdf/asdf.sh" && source "$HOME/.asdf/asdf.sh"
