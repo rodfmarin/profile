@@ -43,10 +43,10 @@ function _create_or_attach () {
   fi
 
   if [[ -f ./.tmux.conf ]]; then
-    exec tmux -f ./.tmux.conf attach -t "$name"
+    exec tmux -f ./.tmux.conf new-session -A -s "$name"
   fi
 
-  exec tmux -s "$name"
+  exec tmux new-session -A -s "$name"
 }
 
 function _show_tmux_cmd () {
@@ -56,7 +56,7 @@ function _show_tmux_cmd () {
       return
   fi
 
-  echo tmux -s "$name"
+  echo tmux new -s "$name"
   return
 }
 
