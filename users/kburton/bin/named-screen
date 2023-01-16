@@ -43,6 +43,7 @@ function _create_or_attach () {
   fi
 
   if [[ -f ./.tmux.conf ]]; then
+    echo exec tmux -t "$name" source-file ./.tmux.conf
     exec tmux -f ./.tmux.conf new-session -A -s "$name"
   fi
 

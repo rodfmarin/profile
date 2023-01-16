@@ -32,6 +32,11 @@ function __rclone.git-urlish-to-git-url () {
     return 0
   fi
 
+  if [[ "$urlish" =~ ^git://([^/]+)/.*$ ]]; then
+    echo "$urlish"
+    return 0
+  fi
+
   echo ""
   return 1
 }
@@ -42,6 +47,18 @@ function __rclone.git-url-to-local-path () {
   #                    git@github.com:pallets/flask.git
   if [[ "$git_url" =~ ^git@([^:]+):([^/]+)/(.+)\.git$ ]]; then
     echo "$HOME/code/${BASH_REMATCH[1]}/${BASH_REMATCH[2]}/${BASH_REMATCH[3]}"
+    return 0
+  fi
+
+  #                    git://git.sv.gnu.org/orgname/emacs.git
+  if [[ "$git_url" =~ ^git://([^/]+)/([^/]+)/(.*)\.git$ ]]; then
+    echo "$HOME/code/${BASH_REMATCH[1]}/${BASH_REMATCH[2]}/${BASH_REMATCH[3]}"
+    return 0
+  fi
+
+  #                    git://git.sv.gnu.org/emacs.git
+  if [[ "$git_url" =~ ^git://([^/]+)/(.*)\.git$ ]]; then
+    echo "$HOME/code/${BASH_REMATCH[1]}/${BASH_REMATCH[2]}"
     return 0
   fi
 
