@@ -1,5 +1,6 @@
-set -e
-set -x
+#!/usr/bin/env bash
+set -eEuo pipefail
+#set -x
 
 test -d $HOME/bin || mkdir $HOME/bin
 for util in $HOME/.profile.d/users/kburton/bin/*; do
@@ -21,6 +22,8 @@ for f in $HOME/.profile.d/users/kburton/.bash.d/*; do
   fname="$(basename $f)"
   if [ ! -e $HOME/.bash.d/$fname ]; then
     ln -s "$f" "$HOME/.bash.d/$fname"
+  else
+    echo "$f already exists at $HOME/.bash.d/$fname"
   fi
 done
 

@@ -39,26 +39,16 @@ function _create_or_attach () {
   fi
 
   if _is_active_tmux_name "$name"; then
-      exec tmux attach -t "$name"
+      exec tmux -L "$name" attach-session -t "$name"
   fi
 
   if [[ -f ./.tmux.conf ]]; then
     echo exec tmux -t "$name" source-file ./.tmux.conf
-    exec tmux -f ./.tmux.conf new-session -A -s "$name"
+    echo tmux -f ./.tmux.conf new-session -A -s "$name"
+    exec tmux -L "$name" -f ./.tmux.conf new-session -A -s "$name"
   fi
 
-  exec tmux new-session -A -s "$name"
-}
-
-function _show_tmux_cmd () {
-  local name="$(_compute_tmux_name_for_pwd)"
-  if _is_active_tmux_name "$name"; then
-      echo tmux attach -t "$name"
-      return
-  fi
-
-  echo tmux new -s "$name"
-  return
+  exec tmux -L "$name" new-session -A -s "$name"
 }
 
 function _isodate () {
@@ -96,14 +86,11 @@ function _main () {
       init)
           _init_cfg_file
           ;;
-      show)
-          _show_tmux_cmd
-          ;;
       "")
           _create_or_attach
           ;;
       *)
-          exec tmux "$@"
+          _show_usage
           ;;
   esac
 

@@ -1,17 +1,27 @@
 #!/usr/bin/env bash
 
+function _isodate_output_filter () {
+  if [[ -t 1 ]]; then
+    # >&2 echo "_isodate_output_filter: 1 is a terminal"
+    cat
+  else
+    # >&2 echo "_isodate_output_filter: 1 is NOT a terminal"
+    tr -d \\n
+  fi
+}
+
 function main () {
     case "${1:-}" in
         d|date)
-            date -u +"%Y-%m-%d"
-            ;; 
+            date -u +"%Y-%m-%d" | _isodate_output_filter
+            ;;
         j|journal)
-            date +"%Y-%m-%dT%H:%M:%S"
-            ;; 
+            date +"%Y-%m-%dT%H:%M:%S" | _isodate_output_filter
+            ;;
         ## full date+time in Zulu / UTC / ISO format
         *)
-            date -u +"%Y-%m-%dT%H:%M:%SZ"
-            ;; 
+            date -u +"%Y-%m-%dT%H:%M:%SZ" | _isodate_output_filter
+            ;;
     esac
 }
 
