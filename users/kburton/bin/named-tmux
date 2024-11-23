@@ -8,10 +8,6 @@ if [[ -n "$DEBUG" ]]; then
 fi
 
 function _compute_tmux_name_for_pwd () {
-  if [ -e '.named-screen' ]; then
-      grep '^NAME=' .named-screen | cut -f2 -d= | tr -d \\n
-      return 0
-  fi
   if [ -e '.named-tmux' ]; then
       grep '^NAME=' .named-tmux | cut -f2 -d= | tr -d \\n
       return 0

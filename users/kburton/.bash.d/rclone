@@ -135,6 +135,26 @@ function __rclone.cmd.git-open () {
   return 0
 }
 
+function __rclone.cmd.pull-request () {
+  local branchname git_url gh_url host org_and_repo
+  branchname="$(git rev-parse --abbrev-ref HEAD)"
+  git_url="$(git config --get remote.origin.url)"
+  if [[ -z "$git_url" ]]; then
+    echo "Error: unable to get remote.origin.url"
+    return 1
+  fi
+
+  gh_url="${git_url##git@}"
+  host="${gh_url%%:*}"
+  org_and_repo="${gh_url##*:}"
+  org_and_repo="${org_and_repo%.git}"
+
+  # https://github.com/kyleburton/bake/compare/kburton/help-framework?expand=1
+  gh_url="https://$host/$org_and_repo/compare/$branchname?expand=1"
+  echo "open: $git_url => $gh_url"
+  __rclone.open_url "$gh_url"
+}
+
 function rclone () {
   local cmd="${1:-}"
 
@@ -142,6 +162,10 @@ function rclone () {
     open)
       shift
       __rclone.cmd.git-open "$@"
+      ;;
+    pr)
+      shift
+      __rclone.cmd.pull-request "$@"
       ;;
     *)
       __rclone.cmd.git-clone-dwim "$@"

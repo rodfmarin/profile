@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+_named_tmux_completion () {
+  local cword cur completions
+  _get_comp_words_by_ref -n : -c cur cword
+  completions="-h --help help list ls init"
+  if [[ "$cword" -eq "1" ]]; then
+    mapfile -t COMPREPLY < <(compgen -W "$completions" -- "$cur")
+  else
+    mapfile -t COMPREPLY < <(compgen -o default -- "$cur")
+  fi
+}
+
+complete -F _named_tmux_completion named-tmux
