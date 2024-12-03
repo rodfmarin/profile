@@ -84,7 +84,7 @@ function _list_all_sessions () {
   for sname in $tmux_socket_path/*; do
     if [[ -S "$sname" ]]; then
       tname="${sname##*/}"
-      echo "tmux -L \"$tname\" attach-session \"$tname\""
+      echo "tmux -L \"$tname\" attach-session"
     fi
   done
 }
