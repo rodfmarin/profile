@@ -4,104 +4,126 @@ set -eEuo pipefail
 DEBUG="${DEBUG:-}"
 
 if [[ -n "$DEBUG" ]]; then
-  set -x
+    set -x
 fi
 
+_setname () {
+    local name
+    name="${1:-}"
+
+    if [[ -z "$name" ]]; then
+        echo "Sets the name for the pwd/project (which defaults to '$(basename "$PWD")'."
+        echo "Error: a name is required"
+        echo "$0 setname <name>"
+        return 1
+    fi
+
+    if [[ -e "./.named-tmux" ]]; then
+        echo "Error: a .named-tmux already exists, remove it or edit it to set the name to '$name'"
+        return 1
+
+    fi
+
+    echo "NAME=$name" > ./.named-tmux
+}
+
 function _compute_tmux_name_for_pwd () {
-  if [ -e '.named-screen' ]; then
-      grep '^NAME=' .named-screen | cut -f2 -d= | tr -d \\n
-      return 0
-  fi
-  if [ -e '.named-tmux' ]; then
-      grep '^NAME=' .named-tmux | cut -f2 -d= | tr -d \\n
-      return 0
-  fi
-  basename $(pwd)
+    if [ -e '.named-screen' ]; then
+        grep '^NAME=' .named-screen | cut -f2 -d= | tr -d \\n
+        return 0
+    fi
+    if [ -e '.named-tmux' ]; then
+        grep '^NAME=' .named-tmux | cut -f2 -d= | tr -d \\n
+        return 0
+    fi
+    basename "$(pwd)"
 }
 
 function _is_active_tmux_name () {
-  local name="$1"
-  tmux -L "$name" list-sessions | grep -q "$name:"
+    local name="$1"
+    tmux -L "$name" list-sessions | grep -q "$name:"
 }
 
 function _create_or_attach () {
-  local name
-  name="${1:-}"
-  if [[ -z "$name" ]]; then
-    name="$(_compute_tmux_name_for_pwd)"
-  fi
+    local name
+    name="${1:-}"
+    if [[ -z "$name" ]]; then
+        name="$(_compute_tmux_name_for_pwd)"
+    fi
 
-  if [ -n "${TMUX:-}" ]; then
-      echo "Hi, it looks like you're inside a tmux session already.  Nesting"
-      echo "tmux sessions isn't usually something we want to do, so I'm not"
-      echo "going to.  If you'd really like to, go ahead and run:"
-      echo ""
-      echo "  tmux -t \"$name\""
-      echo ""
-      echo "Best Regards, your good friend,"
-      echo "  $0"
-      exit 1
-  fi
+    if [ -n "${TMUX:-}" ]; then
+        echo "Hi, it looks like you're inside a tmux session already.  Nesting"
+        echo "tmux sessions isn't usually something we want to do, so I'm not"
+        echo "going to.  If you'd really like to, go ahead and run:"
+        echo ""
+        echo "  tmux -t \"$name\""
+        echo ""
+        echo "Best Regards, your good friend,"
+        echo "  $0"
+        exit 1
+    fi
 
-  if _is_active_tmux_name "$name"; then
-      exec tmux -L "$name" attach-session -t "$name"
-  fi
+    if _is_active_tmux_name "$name"; then
+        exec tmux -L "$name" attach-session -t "$name"
+    fi
 
-  if [[ -f ./.tmux.conf ]]; then
-    echo exec tmux -t "$name" source-file ./.tmux.conf
-    echo tmux -L "$name" -f ./.tmux.conf new-session -A -s "$name"
-    exec tmux -L "$name" -f ./.tmux.conf new-session -A -s "$name"
-  fi
+    if [[ -f ./.tmux.conf ]]; then
+        echo exec tmux -t "$name" source-file ./.tmux.conf
+        echo tmux -L "$name" -f ./.tmux.conf new-session -A -s "$name"
+        exec tmux -L "$name" -f ./.tmux.conf new-session -A -s "$name"
+    fi
 
-  exec tmux -L "$name" new-session -A -s "$name"
+    exec tmux -L "$name" new-session -A -s "$name"
 }
 
 function _isodate () {
-  date -u +"%Y-%m-%dT%H:%M:%SZ"
+    date -u +"%Y-%m-%dT%H:%M:%SZ"
 }
 
 function _init_cfg_file () {
-  local name="$(_compute_tmux_name_for_pwd)"
-  if [ -e '.named-tmux' ]; then
-      return 0
-  fi
+    local name
+    name="$(_compute_tmux_name_for_pwd)"
+    if [ -e '.named-tmux' ]; then
+        return 0
+    fi
 
-  cat > .named-tmux <<END
+    cat > .named-tmux <<END
 # created by $0 on $(_isodate)
 NAME=$name
 END
 }
 
 function _show_usage () {
-  echo "$0 - Manage your tmux sesions sensibly."
-  echo ""
-  echo "   -h --help help    show this help"
-  echo "   show              show tmux cli w/name"
-  echo "   init              create a .named-tmux cfg file in the PWD"
-  echo ""
+    echo "$0 - Manage your tmux sesions sensibly."
+    echo ""
+    echo "   -h --help help    show this help"
+    echo "   setname <name>    set the tmux name for the current project"
+    echo "   show              show tmux cli w/name"
+    echo "   init              create a .named-tmux cfg file in the PWD"
+    echo ""
 }
 
 function _list_all_sessions () {
-  local uid tmux_socket_path tname
-  uid="$(id -u)"
-  tmux_socket_path="/tmp/tmux-$uid"
-  for sname in $tmux_socket_path/*; do
-    if [[ -S "$sname" ]]; then
-      tname="${sname##*/}"
-      echo "tmux -L \"$tname\" attach-session \"$tname\""
-    fi
-  done
+    local uid tmux_socket_path tname
+    uid="$(id -u)"
+    tmux_socket_path="/tmp/tmux-$uid"
+    for sname in $tmux_socket_path/*; do
+        if [[ -S "$sname" ]]; then
+            tname="${sname##*/}"
+            echo "tmux -L \"$tname\" attach-session \"$tname\""
+        fi
+    done
 }
 
 function _main () {
-  local cmd="${1:-}"
+    local cmd="${1:-}"
 
-  case "$cmd" in
-      -h|--help|help) shift ; _show_usage        "$@" ;;
-      list|ls)        shift ; _list_all_sessions "$@" ;;
-      init)           shift ; _init_cfg_file     "$@" ;;
-      *)                      _create_or_attach  "$@" ;;
-  esac
+    case "$cmd" in
+        -h|--help|help) shift ; _show_usage        "$@" ;;
+        list|ls)        shift ; _list_all_sessions "$@" ;;
+        init)           shift ; _init_cfg_file     "$@" ;;
+        *)                      _create_or_attach  "$@" ;;
+    esac
 }
 
 _main "$@"

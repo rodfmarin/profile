@@ -72,8 +72,8 @@ function _show_usage () {
   echo "$0 - Manage your tmux sesions sensibly."
   echo ""
   echo "   -h --help help    show this help"
-  echo "   show              show tmux cli w/name"
   echo "   init              create a .named-tmux cfg file in the PWD"
+  echo "   ls                list active tmux sessions (nb: this lists sockets, some may be dead)"
   echo ""
 }
 
