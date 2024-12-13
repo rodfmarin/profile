@@ -1,0 +1,46 @@
+#!/bin/bash
+set -eEuo pipefail
+
+GIT_ROOT="$(git rev-parse --show-toplevel)"
+branches_file="$GIT_ROOT/.krb.branches"
+
+cmd-jump () {
+  local lnum newb
+  lnum="$1"
+  newb="$(sed -n "${lnum}p" "$branches_file")"
+  git switch "$newb"
+}
+
+cmd-pushb () {
+  local newb
+  newb="${1:-}"
+  git rev-parse --abbrev-ref HEAD >> "$branches_file"
+  if [[ -n "$newb" ]]; then
+    git switch "$newb"
+  fi
+}
+
+cmd-popb () {
+  local newb
+  newb="$(head -n 1 "$branches_file")"
+  mv "$branches_file" "$branches_file.bak"
+  tail -n +2 "$branches_file.bak" > "$branches_file"
+  rm "$branches_file.bak"
+  git switch "$newb"
+}
+
+cmd-ls () {
+  nl "$branches_file"
+}
+
+case "${1:-}" in
+  pushb) shift ; cmd-pushb "$@" ;;
+  popb)  shift ; cmd-popb  "$@" ;;
+  jump)  shift ; cmd-jump  "$@" ;;
+  ls)    shift ; cmd-ls    "$@" ;;
+  *)
+    echo "krb.git: pushb - push current branch and switch to a new branch (if a new branch name is given)"
+    echo "krb.git: popb  - pop current branch back to the last push"
+    echo "krb.git: jump  - jump to a specific branch, see the output of ls
+    echo "krb.git: ls    - list the saved branches
+esac

@@ -1,5 +1,5 @@
-. $HOME/.bashrc
+. "$HOME/.bashrc"
 
-eval $(/home/linuxbrew/.linuxbrew/bin/brew shellenv)
+# eval $(/home/linuxbrew/.linuxbrew/bin/brew shellenv)
 
-export PATH="$HOME/.cargo/bin:$PATH"
+. "$HOME/.cargo/env"

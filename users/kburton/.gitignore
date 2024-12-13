@@ -1,2 +1,14 @@
 *.swp
 out.txt
+.stats/
+all.files
+krb.README
+README.krb
+*~
+.local-screen/
+.tmux.conf
+# state file for krb.git shell helper
+.krb.branches
+.krb.branches.bak
+# silver searcher / ag ignore file
+.ignore

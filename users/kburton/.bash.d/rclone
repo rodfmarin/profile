@@ -1,175 +1,466 @@
 #!/usr/bin/env bash
 
-# TODO: command line completion for this tooling
+# TODO: didn't work on https://egh.riotgames.com/mosaic/officefeedapi
+# set -x
 
-
-function __rclone.open_url () {
-  local url="$1"
-  xdg-open "$url"
+function _rclone_debug_log () {
+    if [ -z "${DEBUG:-}" ]; then
+        return 0
+    fi
+    >&2 echo "[DEBUG] $@"
 }
 
-# TODO: how would we like branches to work? eg:
-#         rclone https://github.com/pallets/flask/tree/1.1.x
-#       would we like that to checkout the branch if the local repo is clean?
-function __rclone.git-urlish-to-git-url () {
-  local urlish="${1}"
-
-  # https://github.com/fengsp/flask-session
-  if [[ "$urlish" =~ ^https://([^/]+)/([^/]+)/([^/]+)$ ]]; then
-    # https://github.com/fengsp/flask-session/blob/master/flask_session/sessions.py
-    echo "git@${BASH_REMATCH[1]}:${BASH_REMATCH[2]}/${BASH_REMATCH[3]}.git"
-    return 0
-  fi
-
-  if [[ "$urlish" =~ ^https://([^/]+)/([^/]+)/([^/]+)/.*$ ]]; then
-    # https://github.com/fengsp/flask-session/blob/master/flask_session/sessions.py
-    echo "git@${BASH_REMATCH[1]}:${BASH_REMATCH[2]}/${BASH_REMATCH[3]}.git"
-    return 0
-  fi
-
-  if [[ "$urlish" =~ git@.* ]]; then
-    echo "$urlish"
-    return 0
-  fi
-
-  if [[ "$urlish" =~ ^git://([^/]+)/.*$ ]]; then
-    echo "$urlish"
-    return 0
-  fi
-
-  echo ""
-  return 1
+function _rclone_looks_like_golang_import () {
+    local url="$1"
+    _rclone_debug_log "${FUNCNAME[0]}: url=$url"
+    [[ $url =~ .+\..+/.+ ]]
 }
 
-function __rclone.git-url-to-local-path () {
-  local git_url="$1"
-
-  #                    git@github.com:pallets/flask.git
-  if [[ "$git_url" =~ ^git@([^:]+):([^/]+)/(.+)\.git$ ]]; then
-    echo "$HOME/code/${BASH_REMATCH[1]}/${BASH_REMATCH[2]}/${BASH_REMATCH[3]}"
-    return 0
-  fi
-
-  #                    git://git.sv.gnu.org/orgname/emacs.git
-  if [[ "$git_url" =~ ^git://([^/]+)/([^/]+)/(.*)\.git$ ]]; then
-    echo "$HOME/code/${BASH_REMATCH[1]}/${BASH_REMATCH[2]}/${BASH_REMATCH[3]}"
-    return 0
-  fi
-
-  #                    git://git.sv.gnu.org/emacs.git
-  if [[ "$git_url" =~ ^git://([^/]+)/(.*)\.git$ ]]; then
-    echo "$HOME/code/${BASH_REMATCH[1]}/${BASH_REMATCH[2]}"
-    return 0
-  fi
-
-  echo ""
-  return 1
+function _rclone_looks_like_git_url () {
+    local url="$1"
+    _rclone_debug_log "${FUNCNAME[0]}: url=$url"
+    [[ $url =~ git@.* ]]
 }
 
-function __rclone.git-url-to-github-url () {
-  local git_url="$1"
-
-  if [[ "$git_url" =~ ^git@([^:]+):([^/]+)/(.+)\.git$ ]]; then
-    # git@github.com:lawrencexia/ticket-webapp.git
-    echo "https://${BASH_REMATCH[1]}/${BASH_REMATCH[2]}/${BASH_REMATCH[3]}"
-    return 0
-  fi
-
-  echo ""
-  return 1
+function _rclone_looks_like_http_url () {
+    local url="$1"
+    _rclone_debug_log "${FUNCNAME[0]}: url=$url"
+    [[ $url =~ https?://.* ]]
 }
 
+function _rclone_get_hostname_from_url () {
+    local url="$1"
+    _rclone_debug_log "${FUNCNAME[0]}: url=$url"
 
-################################################################################
+    if _rclone_looks_like_git_url "$url"; then
+        echo "$url" | cut -f1 -d: | cut -f2 -d@
+        return 0
+    fi
 
-function __rclone.cmd.git-clone-dwim () {
-  local urlish="$1"
+    if _rclone_looks_like_http_url "$url"; then
+        _rclone_debug_log "${FUNCNAME[0]}: looks like an http url, taking part 3"
+        echo "$url" | cut -f3 -d/
+        return 0
+    fi
 
-  local git_url="$(__rclone.git-urlish-to-git-url "$urlish")"
-  if [[ -z "$git_url" ]]; then
-    echo "ERROR: don't know how to convert '$urlish' into a git url"
+    if _rclone_looks_like_golang_import "$url"; then
+        echo "$url" | cut -f1 -d/
+        return 0
+    fi
+
     return 1
-  fi
-
-  local local_path="$(__rclone.git-url-to-local-path "$git_url")"
-  if [[ -z "$local_path" ]]; then
-    echo "ERROR: don't know how to convert '$git_url' into a local path"
-    return 1
-  fi
-
-  if [[ -d "$local_path" ]]; then
-    echo "$git_url already exists in $local_path..."
-    cd "$local_path"
-    return 0
-  fi
-
-  git clone "$git_url" "$local_path"
-  if [[ -d "$local_path" ]]; then
-    cd "$local_path"
-  fi
 }
 
-function __rclone.cmd.git-open () {
-  local action="${1:-}"
-  case "$action" in
-    # TODO: rclone open pr|pull|pull-request
-    # TODO: rclone open wiki
-    # git rev-parse --abbrev-ref HEAD
-    *)
-      local git_url="$(git config --get remote.origin.url)"
-      if [[ -z "$git_url" ]]; then
-        echo "Error: unable to get remote.origin.url"
-        return 1
-      fi
+function _rclone_get_path_from_url () {
+    local url="$1"
+    _rclone_debug_log "${FUNCNAME[0]}: url=$url"
 
-      local gh_url="$(__rclone.git-url-to-github-url $git_url)"
-      if [[ -z "$gh_url" ]]; then
-        echo "Error: unable to convert $git_url to a github url"
-        return 1
-      fi
+    if _rclone_looks_like_git_url "$url"; then
+        local path
+        path="$(echo "$url" | cut -f2 -d:)"
+        echo "${path%.git}"
+        return 0
+    fi
 
-      echo "open: $git_url => $gh_url"
-      __rclone.open_url "$gh_url"
-      ;;
-  esac
-  return 0
+    if _rclone_looks_like_http_url "$url"; then
+        _rclone_debug_log "${FUNCNAME[0]}: looks like an http url, taking parts 4-5"
+        local path
+        path="$(echo "$url" | cut -f4-5 -d/)"
+        echo "${path%.git}"
+        return 0
+    fi
+
+    if _rclone_looks_like_golang_import "$url"; then
+        echo "$url" | cut -f2-3 -d/
+        return 0
+    fi
+
+    return 1
+}
+
+function _rclone_normalize_repo_url () {
+    local repo_url="$1"
+    _rclone_debug_log "${FUNCNAME[0]}: repo_url=$repo_url"
+
+    if _rclone_looks_like_git_url "$repo_url"; then
+        _rclone_debug_log "${FUNCNAME[0]}: looks like a git url, returning as-is"
+        echo "$repo_url"
+        return 0
+    fi
+
+    if _rclone_looks_like_http_url "$repo_url"; then
+        _rclone_debug_log "${FUNCNAME[0]}: looks like an http url, normalizing"
+        # local scheme
+        # scheme="$(echo "$repo_url" | cut -f1 -d:)"
+        local host_and_auth
+        host_and_auth="$(echo "$repo_url" | cut -f3 -d/)"
+        local pathing
+        pathing="$(echo "$repo_url" | cut -f4-5 -d/)"
+
+        # if the pathing ends in .git return as-is
+        _rclone_debug_log "${FUNCNAME[0]}: looking at pathing=$pathing"
+        if [[ $pathing =~ .+\.git ]]; then
+            _rclone_debug_log "${FUNCNAME[0]}: pathing ends in .git, returning url as-is"
+            echo "$repo_url"
+            return 0
+        fi
+
+        # otherwise, lets construct a git style url
+        local new_repo_url="git@$host_and_auth:$pathing.git"
+        _rclone_debug_log "${FUNCNAME[0]}: looks like some other kind of http url, parsing apart into $new_repo_url"
+        echo "$new_repo_url"
+        return 0
+    fi
+
+    if _rclone_looks_like_golang_import "$repo_url"; then
+        _rclone_debug_log "${FUNCNAME[0]}: looks like a golang import..."
+        local git_host
+        git_host="$(_rclone_get_hostname_from_url "$repo_url")"
+        local git_path
+        git_path="$(_rclone_get_path_from_url "$repo_url")"
+        echo "git@$git_host:$git_path.git"
+        return 0
+    fi
+
+    return 1
+}
+
+function _rclone_gh_url () {
+    if [[ "$PWD" = $HOME/code/* ]]; then
+        echo "${PWD#$HOME/code/}" | cut -f1-3 -d/
+        return
+    fi
+
+    if [[ -n "$GOPATH" && "$PWD" = $GOPATH/src/* ]]; then
+        echo "${PWD#$GOPATH/src/}" | cut -f1-3 -d/
+        return
+    fi
+
+    echo "Unable to determine GH URL from PWD=$PWD"
+    return 1
+}
+
+function _rclone_open_nfo_url () {
+    # if there is an arg, see if we've got riot.nfo file and if we can find the url in
+    # jq -r .urls.deploy < riot.nfo
+    if [[ -z "$1" ]]; then
+        echo "rclone open ..."
+        echo "  rclone open wiki"
+        echo "  rclone open pulls       # pr|pulls - open gh pull requests"
+        echo "  rclone open wiki        # open gh wiki"
+        echo "  rclone open git         # .|g|gh|git - open projects git homepage"
+        echo "  rclone open <<nfo-url>> # open url entry from riot.nfo file"
+        if [[ -e "riot.nfo" ]]; then
+            for url in $(jq -r '.urls | keys[]' < riot.nfo); do
+                echo "  rclone open $url"
+            done
+        fi
+        return 1
+    fi
+
+    (
+        while : ; do
+            if [[ -e ./riot.nfo ]]; then
+                break
+            fi
+            if [[ -d "./.git" ]]; then
+                echo "Error: this project doesn't seem to have a riot.nfo file (stopped looking at $PWD)"
+                return 1
+            fi
+            cd ..
+        done
+
+        local url
+        url="$(jq -r ".urls[\"$1\"]" < riot.nfo)"
+        if [[ -z "$url" || "$url" == null ]]; then
+            echo "Error: no url found for $1 in riot.nfo file:"
+            for url in $(jq -r '.urls | keys[]' < riot.nfo); do
+                echo "  rclone open $url"
+            done
+            return 1
+        fi
+
+        open "$url"
+    )
+    return 0
+}
+
+function _rclone_open_pwd_in_browser () {
+    local cmd
+    cmd="${1:-}"
+    local gh_url
+    gh_url="$(_rclone_gh_url)"
+    local branch
+    branch="$(git rev-parse --abbrev-ref HEAD)"
+
+    if [[ -e "$cmd" ]]; then
+        # it's a local file, lets open it in a browser ...
+        # ./riot/routing/globalriot.properties  => https://gh.riotgames.com/chat/rms-configuration/blob/master/riot/routing/globalriot.properties
+        local rel_path
+        rel_path="$(git rev-parse --show-prefix)"
+        echo "rel_path=$rel_path"
+        if [[ -n "$rel_path" ]]; then
+            echo via rel_path: open "https://$gh_url/blob/$branch/$rel_path/$cmd"
+            open "https://$gh_url/blob/$branch/$rel_path/$cmd"
+        else
+            echo no rel_path: open "https://$gh_url/tree/$branch/$cmd"
+            open "https://$gh_url/tree/$branch/$cmd"
+        fi
+        return 0
+    fi
+
+    case "$cmd" in
+        wiki)
+            open "https://$gh_url/wiki"
+            ;;
+        pr|pulls)
+            open "https://$gh_url/pulls"
+            ;;
+        .|g|git|gh)
+
+            if [[ "$branch" == "master" ]]; then
+                gh_url="https://$gh_url"
+            else
+                ## if we're on a branch
+                gh_url="https://$gh_url/tree/$branch"
+            fi
+
+            if [[ -n "$1" && -d "$1" ]]; then
+                gh_url="$gh_url/$1"
+            fi
+
+            if [[ -n "$1" && -f "$1" ]]; then
+                # https://gh.riotgames.com/chat/rms_routing/tree/CHAT-2362/docs
+                # https://gh.riotgames.com/chat/rms_routing/blob/CHAT-2362/docs/DEVLOPMENT.md
+                gh_url="${gh_url/\/tree\//\/blob\//}/$1"
+            fi
+
+            open "$gh_url"
+            ;;
+        *)
+            _rclone_open_nfo_url "$@"
+            ;;
+    esac
+}
+
+function _rclone_clone_go_repo () {
+    local repo_urlish="${1:-}"
+    if [[ -z "$repo_urlish" ]]; then
+        echo "Error: you need to supply a url-like thing"
+        return 1
+    fi
+
+
+    local repo_url
+    repo_url="$(_rclone_normalize_repo_url "$repo_urlish")"
+
+    if [[ -z "${GOPATH:-}" ]]; then
+        echo "Error: there is no GOPATH set, I'm not sure where you'd want me to clone $repo_url ..."
+        return 1
+    fi
+
+
+    local repo_host
+    repo_host="$(_rclone_get_hostname_from_url "$repo_url")"
+    local repo_path
+    repo_path="$(_rclone_get_path_from_url "$repo_url")"
+    local local_parent_dir
+    local_parent_dir="$GOPATH/src/$repo_host/$(dirname "$repo_path")"
+    local local_dname
+    local_dname="$(basename "$repo_path")"
+
+    # echo "Need to clone repo_url=$repo_url"
+    # echo "  repo_host=$repo_host"
+    # echo "  repo_path=$repo_path"
+    # echo "  local_parent_dir=$local_parent_dir"
+    # echo "  local_dname=$local_dname"
+
+    test -d "$local_parent_dir" || mkdir -p "$local_parent_dir"
+    cd "$local_parent_dir" || return 1
+    if [ -d "$local_dname" ]; then
+        cd "$local_dname" || return 1
+        echo "Looks like you already have $repo_url, perhaps you'd like to:"
+        echo ""
+        echo "git pull origin master"
+        echo ""
+    else
+        # NB: to support golang import style urls we'll need to transform the url
+        # into something git can actually clone, we'll prefer ssh style urls b/c
+        # that's what I like :)
+        _rclone_debug_log "${FUNCNAME[0]}: git clone $(_rclone_normalize_repo_url "$repo_url")"
+        git clone "$(_rclone_normalize_repo_url "$repo_url")"
+        cd "$local_dname" || return 1
+    fi
+}
+
+function _rclone_go_project_check () {
+    local repo_urlish="$1"
+    if [[ -e "main.go" ]]; then
+        echo "ER, Hi, it looks like this directory has a ./main.go file"
+        echo "...which makes me think it's a go project, instead, perhaps you'd like to:"
+        echo ""
+        echo "  rclone go $repo_urlish"
+        echo ""
+    fi
+}
+
+function _rclone_git_remote () {
+    # rclone remote add <<name>> <<urlish>>
+    if [[ "remote add" != "$1 $2" ]]; then
+        echo "Error: rclone remote add <<name>> <<urlish>>"
+        return 1
+    fi
+
+    shift # remote
+    shift # add
+    local remote_name="$1"
+    shift
+    local urlish="$1"
+    shift
+
+    local git_url
+    git_url="$(_rclone_normalize_repo_url "$urlish")"
+    git remote add "$remote_name" "$git_url"
+}
+
+function _rclone_create_pr () {
+    local gh_url
+    local branch
+    # create PR urls look like:
+    # https://gh.riotgames.com/mgs/matchmaking/pull/new/kburton/mmcli-kongplete
+    # so we need to know a few things: <githost>/<org>/<repo>; and the current branch name
+    gh_url="$(_rclone_gh_url)"
+    branch="$(git rev-parse --abbrev-ref HEAD)"
+    new_pr_url="https://$gh_url/pull/new/$branch"
+    # echo "_rclone_create_pr: gh_url=$gh_url"
+    # echo "_rclone_create_pr: branch=$branch"
+    # echo "_rclone_create_pr: new_pr_url=$new_pr_url"
+    open "$new_pr_url"
 }
 
 function __rclone.cmd.pull-request () {
-  local branchname git_url gh_url host org_and_repo
-  branchname="$(git rev-parse --abbrev-ref HEAD)"
-  git_url="$(git config --get remote.origin.url)"
-  if [[ -z "$git_url" ]]; then
-    echo "Error: unable to get remote.origin.url"
-    return 1
-  fi
+    local branchname git_url gh_url host org_and_repo
+    branchname="$(git rev-parse --abbrev-ref HEAD)"
+    git_url="$(git config --get remote.origin.url)"
+    if [[ -z "$git_url" ]]; then
+        echo "Error: unable to get remote.origin.url"
+        return 1
+    fi
 
-  gh_url="${git_url##git@}"
-  host="${gh_url%%:*}"
-  org_and_repo="${gh_url##*:}"
-  org_and_repo="${org_and_repo%.git}"
+    gh_url="${git_url##git@}"
+    host="${gh_url%%:*}"
+    org_and_repo="${gh_url##*:}"
+    org_and_repo="${org_and_repo%.git}"
 
-  # https://github.com/kyleburton/bake/compare/kburton/help-framework?expand=1
-  gh_url="https://$host/$org_and_repo/compare/$branchname?expand=1"
-  echo "open: $git_url => $gh_url"
-  __rclone.open_url "$gh_url"
+    # https://github.com/kyleburton/bake/compare/kburton/help-framework?expand=1
+    gh_url="https://$host/$org_and_repo/compare/$branchname?expand=1"
+    echo "open: $git_url => $gh_url"
+    __rclone.open_url "$gh_url"
 }
 
 function rclone () {
-  local cmd="${1:-}"
+    local repo_url="${1:-}"
+    _rclone_debug_log "${FUNCNAME[0]}: repo_url=$repo_url"
 
-  case "$cmd" in
-    open)
-      shift
-      __rclone.cmd.git-open "$@"
-      ;;
-    pr)
-      shift
-      __rclone.cmd.pull-request "$@"
-      ;;
-    *)
-      __rclone.cmd.git-clone-dwim "$@"
-      ;;
-  esac
+    case "$repo_url" in
+        go)
+            shift
+            _rclone_clone_go_repo "$@"
+            return 0
+            ;;
+        open)
+            shift
+            _rclone_open_pwd_in_browser "$@"
+            return 0
+            ;;
+        pr|pull)
+            shift
+            _rclone_create_pr "$@"
+            return 0
+            ;;
+        remote)
+            _rclone_git_remote "$@"
+            return 0
+            ;;
+    esac
+
+    while :; do
+        case "$repo_url" in
+            git)
+                shift
+                repo_url="${1:-}"
+                ;;
+            clone)
+                shift
+                repo_url="${1:-}"
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+
+    if [ -z "$repo_url" ]; then
+        echo "rclone <<repo-url>>"
+        echo "  Automatically manages all your git clones in $HOME/code according to the EngOps+Digital Workplace Conventions."
+        echo "  You can use this in place of 'git clone' to fetch any of the following url styles:"
+        echo "    git ssh urls:                  git@git.host:org/path.git"
+        echo "    http(s) urls:                  https://git.host/org/repo.git"
+        echo "    golang import urls:            git.host/org/repo/package"
+        echo "    (almost) any github site url:  https://github.com/org/project/pull/134"
+        echo ""
+        echo "rclone open"
+        echo "  Attempts to open the GitHub page for the repository associated to the present working directory."
+        echo "    (This is predicated on you organizaing your projects in ~/code/github-host/owner/repo)"
+        echo ""
+        echo "rclone pr"
+        echo "  Opens a browser tab to create a GitHub PR for the current project and branch."
+        echo "    Eg:.https://<git-repo-hostname>/<organization>/<repository>/pull/new/<branch-name>"
+        echo "  where each of these is taken from the current working directory and local git repo."
+        echo ""
+        if [[ -d .git ]]; then
+            git remote -v
+        fi
+
+        echo ""
+        return 1
+    fi
+
+    local repo_host
+    repo_host="$(_rclone_get_hostname_from_url "$repo_url")"
+    if [[ -z "$repo_host" ]]; then
+        echo "Error: arg doens't look like a git url? $repo_url"
+        return 1
+    fi
+
+    local repo_path
+    repo_path="$(_rclone_get_path_from_url "$repo_url")"
+    local local_parent_dir
+    local_parent_dir="$HOME/code/$repo_host/$(dirname $repo_path)"
+    local local_dname
+    local_dname="$(basename $repo_path)"
+
+    _rclone_debug_log "${FUNCNAME[0]}: repo_url=$repo_url"
+    _rclone_debug_log "${FUNCNAME[0]}: repo_host=$repo_host"
+    _rclone_debug_log "${FUNCNAME[0]}: repo_path=$repo_path"
+    _rclone_debug_log "${FUNCNAME[0]}: local_parent_dir=$local_parent_dir"
+
+    test -d "$local_parent_dir" || mkdir -p "$local_parent_dir"
+    cd "$local_parent_dir" || return 1
+    if [ -d "$local_dname" ]; then
+        cd "$local_dname" || return 1
+        echo "Looks like you already have $repo_url, perhaps you'd like to:"
+        echo ""
+        echo "git pull origin master"
+        echo ""
+        _rclone_go_project_check "$repo_url"
+    else
+        # NB: to support golang import style urls we'll need to transform the url
+        # into something git can actually clone, we'll prefer ssh style urls b/c
+        # that's what I like :)
+        _rclone_debug_log "${FUNCNAME[0]}: git clone $(_rclone_normalize_repo_url "$repo_url")"
+        git clone "$(_rclone_normalize_repo_url "$repo_url")"
+        cd "$local_dname" || return 1
+        _rclone_go_project_check "$repo_url"
+    fi
 }
-
