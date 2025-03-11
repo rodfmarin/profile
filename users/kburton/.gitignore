@@ -12,3 +12,6 @@ README.krb
 .krb.branches.bak
 # silver searcher / ag ignore file
 .ignore
+# a sentinel file I use for coordinating build activities between shells
+.services-restarted
+.named-tmux

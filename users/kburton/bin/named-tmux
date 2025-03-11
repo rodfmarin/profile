@@ -89,6 +89,44 @@ function _list_all_sessions () {
   done
 }
 
+function _cmd_attach () {
+  local uid tmux_socket_path tname sessionname socketname
+  sessionname="${1:-}"
+
+  if [[ -z "$sessionname" ]]; then
+    uid="$(id -u)"
+    tmux_socket_path="/tmp/tmux-$uid"
+    for sessionname in $tmux_socket_path/*; do
+      if [[ -S "$sessionname" ]]; then
+        tname="${sessionname##*/}"
+        echo "${0##*/} attach \"$tname\""
+      fi
+    done
+    return 0
+  fi
+
+  uid="$(id -u)"
+  tmux_socket_path="/tmp/tmux-$uid"
+  for socketname in $tmux_socket_path/*; do
+    tname="${socketname##*/}"
+    if [[ -S "$socketname" && "$tname" == "$sessionname"* ]]; then
+      exec tmux -L "$tname" attach-session
+    fi
+  done
+
+  echo "Error: could not find a tmux session for name='$sessionname'"
+  uid="$(id -u)"
+  tmux_socket_path="/tmp/tmux-$uid"
+  for sessionname in $tmux_socket_path/*; do
+    if [[ -S "$sessionname" ]]; then
+      tname="${sessionname##*/}"
+      echo "${0##*/} attach \"$tname\""
+    fi
+  done
+
+  return 1
+}
+
 function _main () {
   local cmd="${1:-}"
 
@@ -96,6 +134,7 @@ function _main () {
       -h|--help|help) shift ; _show_usage        "$@" ;;
       list|ls)        shift ; _list_all_sessions "$@" ;;
       init)           shift ; _init_cfg_file     "$@" ;;
+      attach)         shift ; _cmd_attach        "$@" ;;
       *)                      _create_or_attach  "$@" ;;
   esac
 }

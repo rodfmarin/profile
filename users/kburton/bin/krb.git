@@ -12,11 +12,16 @@ cmd-jump () {
 }
 
 cmd-pushb () {
-  local newb
+  local newb flags
+  flags=""
+  while [[ "${1:-}" == -c ]]; do
+    flags="-c"
+    shift
+  done
   newb="${1:-}"
   git rev-parse --abbrev-ref HEAD >> "$branches_file"
   if [[ -n "$newb" ]]; then
-    git switch "$newb"
+    git switch $flags "$newb"
   fi
 }
 
@@ -34,10 +39,10 @@ cmd-ls () {
 }
 
 case "${1:-}" in
-  pushb) shift ; cmd-pushb "$@" ;;
-  popb)  shift ; cmd-popb  "$@" ;;
-  jump)  shift ; cmd-jump  "$@" ;;
-  ls)    shift ; cmd-ls    "$@" ;;
+  pushb)   shift ; cmd-pushb "$@" ;;
+  popb)    shift ; cmd-popb  "$@" ;;
+  jump)    shift ; cmd-jump  "$@" ;;
+  ls)      shift ; cmd-ls    "$@" ;;
   *)
     echo "krb.git: pushb - push current branch and switch to a new branch (if a new branch name is given)"
     echo "krb.git: popb  - pop current branch back to the last push"
